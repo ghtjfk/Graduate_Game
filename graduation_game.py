@@ -6,10 +6,10 @@ white = (255, 255, 255)
 black = (0, 0, 0)
 
 # 화면 크기 및 맵 크기 설정
-screen_width = 800
-screen_height = 600
-map_width = 1600
-map_height = 600
+screen_width = 1000
+screen_height = 800
+map_width = 4000
+map_height = 1000
 
 def runGame(screen, clock, player_image, background_stage1_1, background_stage1_2):
     # 플레이어 설정
@@ -61,7 +61,7 @@ def runGame(screen, clock, player_image, background_stage1_1, background_stage1_
         screen.blit(background_stage1_2, (screen_width - camera_x, 0))
 
         # 맵을 카메라 위치에 따라 그리기
-        screen.blit(player_image, (player_x - camera_x, player_y))
+        screen.blit(player_image, (player_x - camera_x, player_y - 50))
 
         # 화면 업데이트
         pygame.display.flip()
@@ -73,12 +73,28 @@ def initGame():
     pygame.init()
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("플랫폼 게임")
-    player_image = pygame.Surface((50, 50))
-    player_image.fill(white)
+
+    # 플레이어 이미지 로드
+    player_image = pygame.image.load("player_image.png")
+    player_image = pygame.transform.scale(player_image, (100, 100))
+
+    # 배경 이미지 로드
     background_stage1_1 = pygame.image.load("송민학교1.png")
     background_stage1_1 = pygame.transform.scale(background_stage1_1, (map_width, map_height))
     background_stage1_2 = pygame.image.load("송민학교2.png")
     background_stage1_2 = pygame.transform.scale(background_stage1_2, (map_width, map_height))
+
+    # 초기 배경 음악 로드 및 재생 (7초짜리)
+    pygame.mixer.music.load("initial_music.mp3")
+    pygame.mixer.music.play(1, 0.0)
+
+    # 대기하며 초기 음악이 재생 완료되길 기다림
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(7)  # 대기시간 설정
+
+    # 초기 음악이 끝나면 다른 음악으로 교체 및 반복 재생
+    pygame.mixer.music.load("loop_music.mp3")
+    pygame.mixer.music.play(-1)
 
     # 메인 루프
     clock = pygame.time.Clock()
