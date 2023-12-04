@@ -1,10 +1,6 @@
 import pygame
 import sys
 
-# 색깔 정의
-white = (255, 255, 255)
-black = (0, 0, 0)
-
 # 화면 크기 및 맵 크기 설정
 screen_width = 1000
 screen_height = 800
@@ -76,19 +72,16 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
 
             # 플레이어와 장애물 충돌 체크
             if (
-                player_x < assignment_x[i] + assignment_width and
-                player_x + player_width > assignment_x[i] and
-                player_y < assignment_y + assignment_height and
-                player_y + player_height > assignment_y - 20  # 충돌 기준을 완화
+                player_x < assignment_x[i] + assignment_width - 50 and
+                player_x + player_width > assignment_x[i] + 50 and
+                player_y < assignment_y + assignment_height - 50 and
+                player_y + player_height > assignment_y + 50
             ):
                 # 충돌 시 HP 감소 및 재위치 설정
                 player_hp -= 1
-                player_x = 50
-                player_y = screen_height - player_height
-
                  
         # HP 이미지 표시
-        if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (100, 50)), (10, 10))
+        if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (120, 50)), (10, 10))
 
 
         # 화면 업데이트
@@ -126,9 +119,9 @@ def initGame():
         1: pygame.image.load("hp1.png").convert_alpha(),
     }
 
-    # 초기 배경 음악 로드 및 재생 (7초짜리)
+    '''# 초기 배경 음악 로드 및 재생 (7초짜리)
     pygame.mixer.music.load("initial_music.mp3")
-    pygame.mixer.music.play(1, 0.0)
+    pygame.mixer.music.play(1, 0.0)'''
 
     # 대기하며 초기 음악이 재생 완료되길 기다림
     while pygame.mixer.music.get_busy():
@@ -143,4 +136,4 @@ def initGame():
     runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
 
 if __name__ == '__main__':
-    initGame()
+    initGame()   
