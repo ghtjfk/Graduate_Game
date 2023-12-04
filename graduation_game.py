@@ -1,5 +1,7 @@
 import pygame
 import sys
+import time
+from tkinter import messagebox
 
 # 화면 크기 및 맵 크기 설정
 screen_width = 1000
@@ -27,6 +29,11 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
     assignment_x = [1000, 2000, 3000]  # 3개의 장애물 생성
     assignment_y = screen_height - assignment_height
     assignment_speed = 20
+
+    # 플레이어의 초기 무적 상태 및 무적 지속 시간 설정
+    invincible = False
+    invincible_duration = 1  # 무적 지속 시간 (초)
+    invincible_start_time = 0  # 무적이 시작된 시간
 
     # 카메라 위치 설정
     camera_x = 0
@@ -77,11 +84,20 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
                 player_y < assignment_y + assignment_height - 50 and
                 player_y + player_height > assignment_y + 50
             ):
-                # 충돌 시 HP 감소 및 재위치 설정
-                player_hp -= 1
+                # 무적 상태인지 확인하고 충돌 시 처리
+                if not invincible:
+                    # 충돌 시 HP 감소
+                    player_hp -= 1
+                    # 무적 상태로 설정 및 시작 시간 기록
+                    invincible = True
+                    invincible_start_time = time.time()
+
+        # 무적 상태인 경우, 1초 동안은 무적을 유지
+        if invincible and time.time() - invincible_start_time > invincible_duration:
+            invincible = False
                  
         # HP 이미지 표시
-        if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (120, 50)), (10, 10))
+        if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (150, 50)), (10, 10))
 
 
         # 화면 업데이트
@@ -90,15 +106,18 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
         # FPS 설정
         clock.tick(30)
 
-    # 게임 종료 메시지 출력
-    print("게임 종료")
-    pygame.quit()
-    sys.exit()
+    # 메시지 박스 표시
+    result = messagebox.askquestion("게임 종료", "다시하시겠습니까?")
+    if result == 'yes':
+        runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
+    else:
+        pygame.quit()
+        sys.exit()
 
 def initGame():
     pygame.init()
     screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("플랫폼 게임")
+    pygame.display.set_caption("졸업 게임")
 
     # 플레이어 이미지 로드
     player_image = pygame.image.load("player_image.png")
@@ -136,4 +155,4 @@ def initGame():
     runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
 
 if __name__ == '__main__':
-    initGame()   
+    initGame()
