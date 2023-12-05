@@ -9,6 +9,13 @@ screen_height = 800
 map_width = 4000
 map_height = 800
 
+class Block:
+    def __init__(self, x, y, width, height):
+        self.rect = pygame.Rect(x, y, width, height)
+
+    def draw(self, screen, camera_x):
+        pygame.draw.rect(screen, (255, 0, 0), (self.rect.x - camera_x, self.rect.y, self.rect.width, self.rect.height))
+
 def runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images):
     # 플레이어 설정
     player_width = 100
@@ -106,9 +113,17 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
         # FPS 설정
         clock.tick(30)
 
+    # 게임 오버 시 음악 중단
+    pygame.mixer.music.stop()
+
     # 메시지 박스 표시
     result = messagebox.askquestion("게임 종료", "다시하시겠습니까?")
     if result == 'yes':
+        # 음악 다시 재생
+        pygame.mixer.music.load("loop_music.mp3")
+        pygame.mixer.music.play(-1)
+
+        # 게임 재시작
         runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
     else:
         pygame.quit()
@@ -138,9 +153,9 @@ def initGame():
         1: pygame.image.load("hp1.png").convert_alpha(),
     }
 
-    '''# 초기 배경 음악 로드 및 재생 (7초짜리)
+    # 초기 배경 음악 로드 및 재생 (7초짜리)
     pygame.mixer.music.load("initial_music.mp3")
-    pygame.mixer.music.play(1, 0.0)'''
+    pygame.mixer.music.play(1, 0.0)
 
     # 대기하며 초기 음악이 재생 완료되길 기다림
     while pygame.mixer.music.get_busy():
