@@ -14,9 +14,14 @@ class Block:
         self.rect = pygame.Rect(x, y, width, height)
 
     def draw(self, screen, camera_x):
-        pygame.draw.rect(screen, (255, 0, 0), (self.rect.x - camera_x, self.rect.y, self.rect.width, self.rect.height))
+        block_surface = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(block_surface, (0, 0, 0, 180), (0, 0, self.rect.width, self.rect.height))
+        screen.blit(block_surface, (self.rect.x - camera_x, self.rect.y))
 
-def runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images):
+    def check_collision(self, player_rect):
+        return self.rect.colliderect(player_rect)
+
+def runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images, blocks):
     # 플레이어 설정
     player_width = 100
     player_height = 100
@@ -33,7 +38,7 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
     # 장애물(과제) 설정
     assignment_width = 100
     assignment_height = 100
-    assignment_x = [1000, 2000, 3000]  # 3개의 장애물 생성
+    assignment_x = [500, 700, 900]  # 2개의 장애물 생성
     assignment_y = screen_height - assignment_height
     assignment_speed = 20
 
@@ -102,10 +107,33 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
         # 무적 상태인 경우, 1초 동안은 무적을 유지
         if invincible and time.time() - invincible_start_time > invincible_duration:
             invincible = False
+
+        # 플레이어와 블록 간의 충돌 체크
+        player_rect = pygame.Rect(player_x, player_y, player_width, player_height)
+        for block in blocks:
+            if block.check_collision(player_rect):
+
+                # 플레이어가 블록 위에 있는지 확인하고, 위에 있다면 y 좌표를 조정
+                if player_y + player_height <= block.rect.y + 30:
+                    player_y = block.rect.y - player_height
+                    player_velocity_y = 0
+                    # 플레이어가 점프 중이 아니라면 바닥에 닿은 것으로 처리
+                    if keys[pygame.K_SPACE]:
+                        player_velocity_y = -jump_height
+
+                else:
+                    # 좌우 방향으로의 충돌을 확인하여 위치 조정
+                    if player_x + player_width > block.rect.x and player_x < block.rect.x:
+                        player_x = block.rect.x - player_width
+                    elif player_x < block.rect.x + block.rect.width and player_x > block.rect.x:
+                        player_x = block.rect.x + block.rect.width
                  
         # HP 이미지 표시
         if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (150, 50)), (10, 10))
 
+         # 블록 그리기
+        for block in blocks:
+            block.draw(screen, camera_x)
 
         # 화면 업데이트
         pygame.display.flip()
@@ -124,7 +152,7 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, hp
         pygame.mixer.music.play(-1)
 
         # 게임 재시작
-        runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
+        runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images, blocks)
     else:
         pygame.quit()
         sys.exit()
@@ -153,9 +181,18 @@ def initGame():
         1: pygame.image.load("hp1.png").convert_alpha(),
     }
 
+    # 블록 객체들 생성 및 리스트에 추가
+    blocks = [Block(300, screen_height - 100, 100, 100),
+              Block(1100, screen_height - 100, 300, 100),
+              Block(1400, screen_height - 200, 100, 200),
+              Block(1500, screen_height - 300, 100, 300),
+              Block(3000, screen_height - 300, 100, 300),
+              Block(3100, screen_height - 200, 100, 200),
+              Block(3200, screen_height - 100, 100, 100)]
+
     # 초기 배경 음악 로드 및 재생 (7초짜리)
-    pygame.mixer.music.load("initial_music.mp3")
-    pygame.mixer.music.play(1, 0.0)
+    '''pygame.mixer.music.load("initial_music.mp3")
+    pygame.mixer.music.play(1, 0.0)'''
 
     # 대기하며 초기 음악이 재생 완료되길 기다림
     while pygame.mixer.music.get_busy():
@@ -167,7 +204,7 @@ def initGame():
     
     # 메인 루프
     clock = pygame.time.Clock()
-    runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images)
+    runGame(screen, clock, player_image, background_stage1, assignment_image, hp_images, blocks)
 
 if __name__ == '__main__':
     initGame()
