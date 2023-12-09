@@ -1,5 +1,6 @@
 import random
 import math
+import time
 import pygame
 import sys
 import time
@@ -13,12 +14,23 @@ screen_height = 800
 map_width = 4000
 map_height = 800
 
+# BossGame_image 클래스 정의
+class StageImage:
+    def __init__(self, image_path):
+        self.image = pygame.image.load(image_path).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.active = False
+
+    def draw(self, screen, x, y):
+        if self.active:
+            screen.blit(self.image, (x, y))
+
 # Fireball 클래스 정의
 class Fireball:
     def __init__(self, x, y, image):
         self.image = image
         self.rect = self.image.get_rect(center=(x, y))
-        self.speed = 10
+        self.speed = 13
         # 181도에서 359도 사이의 랜덤한 각도 설정
         angle = random.randrange(10, 170)
         angle_rad = math.radians(angle)
@@ -37,7 +49,9 @@ class Fireball:
         screen.blit(self.image, self.rect.topleft)
 
     def check_collision(self, player_rect):
-        return self.rect.colliderect(player_rect)
+        # Fireball의 충돌 영역을 줄임
+        smaller_rect = self.rect.inflate(-65, -65)  # 가로, 세로 각각 65 픽셀씩 줄임
+        return smaller_rect.colliderect(player_rect)
 
 class Block:
     def __init__(self, x, y, width, height):
@@ -143,8 +157,8 @@ def initGame():
     pygame.mixer.music.play(1, 0.0)
 
     # 대기하며 초기 음악이 재생 완료되길 기다림
-    '''while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(7)  # 대기시간 설정'''
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(7)  # 대기시간 설정
 
     # 초기 음악이 끝나면 다른 음악으로 교체 및 반복 재생
     pygame.mixer.music.load("main_music.mp3")
@@ -189,7 +203,7 @@ def runGame(
     # 플레이어 설정
     player_width = 100
     player_height = 100
-    player_x = 3500
+    player_x = 50
     player_y = screen_height - player_height
     player_speed = 10
     jump_height = 20
@@ -221,11 +235,16 @@ def runGame(
     # 카메라 위치 설정
     camera_x = 0
 
-    # "시험 기간" 텍스트 설정
     pygame.font.init()
-    myfont = pygame.font.SysFont('Comic Sans MS', 30)
-    textsurface = myfont.render('Exam Period', False, (255, 255, 255))
-    textsurface = pygame.transform.scale(textsurface, (800, 100))
+    # "Exam Period" 텍스트 설정
+    Exam_Period_font = pygame.font.SysFont('Comic Sans MS', 30)
+    Exam_Period_textsurface = Exam_Period_font.render('Exam Period', False, (255, 255, 255))
+    Exam_Period_textsurface = pygame.transform.scale(Exam_Period_textsurface, (800, 100))
+
+    # "Go to Capstone Design" 텍스트 출력
+    Capstone_Design_font = pygame.font.SysFont('Comic Sans MS', 10)
+    Capstone_Design_textsurface = Capstone_Design_font.render('Go to Capstone Design', False, (255, 255, 255))
+    Capstone_Design_textsurface = pygame.transform.scale(Capstone_Design_textsurface, (400, 100))
 
     running = True
     
@@ -316,8 +335,8 @@ def runGame(
 
         # door_image와 플레이어 간의 충돌 체크
         if (
-            player_x < 3700 + door_width and
-            player_x + player_width > 3700 and
+            player_x < 3800 + door_width and
+            player_x + player_width > 3800 and
             player_y < screen_height and
             player_y + player_height > screen_height - 400
         ):
@@ -397,8 +416,11 @@ def runGame(
             player_hp += 1
             items[0].rect.x = -1000  # 아이템을 화면 밖으로 옮겨서 보이지 않게 함
 
-        # "시험 기간" 텍스트 출력
-        screen.blit(textsurface,(1900 - camera_x, screen_height - 200))
+        # "Exam Period" 텍스트 출력
+        screen.blit(Exam_Period_textsurface,(1900 - camera_x, screen_height - 200))
+
+        # "Go to Capstone Design" 텍스트 출력
+        screen.blit(Capstone_Design_textsurface,(3700 - camera_x, screen_height - 300))
 
         # 화면 업데이트
         pygame.display.flip()
@@ -479,6 +501,23 @@ def runBossGame(
     boss_background_stage = pygame.image.load("코딩화면.png")
     boss_background_stage = pygame.transform.scale(boss_background_stage, (1000, 800))
 
+    # 이미지 파일 로드
+    image_paths = [
+        "요구사항 분석.png",  # 요구사항 분석
+        "설계.png",  # 설계
+        "구현.png",  # 구현
+        "테스트.png",  # 테스트
+        "유지보수.png"   # 유지보수
+    ]
+
+    # StageImage 객체 초기화
+    stage_images = [StageImage(path) for path in image_paths]
+
+    # 이미지 출현을 제어하기 위한 타이머
+    image_timer = 0
+    current_image_index = 0
+    image_interval = 10000  # 10초
+
     # 플레이어 설정
     player_width = 100
     player_height = 100
@@ -496,13 +535,17 @@ def runBossGame(
     invincible = False
     invincible_duration = 0.5  # 무적 지속 시간 (초)
     invincible_start_time = 0  # 무적이 시작된 시간
-
+    
     running = True
 
     fireball_timer = 0
     fireball_interval = 1000
 
     while running and player_hp > 0:
+
+        # 배경 그리기 (맵의 배경)
+        screen.blit(boss_background_stage, (0, 0))
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -528,8 +571,44 @@ def runBossGame(
             player_y = screen_BossGame_height - 100
             player_velocity_y = 0
 
-        # 배경 그리기 (맵의 배경)
-        screen.blit(boss_background_stage, (0, 0))
+        # 플레이어 Rect 업데이트
+        player_rect = pygame.Rect(player_x, player_y, player_width, player_height)
+
+        # StageImage 출현 및 상호작용 처리
+        if current_image_index < len(stage_images):
+
+            # 마지막 이미지와의 충돌 검사
+            if current_image_index == len(stage_images) - 1 and stage_images[current_image_index].active:
+                if player_rect.colliderect(stage_images[current_image_index].rect):
+                    # 아이템 획득 효과음
+                    item_sound.play()
+                    # 음악 중단
+                    pygame.mixer.music.stop()
+
+                    # 엔딩으로 이동
+                    GotoEnding(
+                        screen,
+                        clock,
+                        player_image,
+                        hp_images,
+                        jump_sound,
+                        )
+            
+            if not stage_images[current_image_index].active:
+                if pygame.time.get_ticks() - image_timer > image_interval:
+                    stage_images[current_image_index].active = True
+                    stage_images[current_image_index].rect.x = random.randint(0, screen_width - stage_images[current_image_index].rect.width)
+                    stage_images[current_image_index].rect.y = screen_height - 100
+                    image_timer = pygame.time.get_ticks()
+            else:
+                stage_images[current_image_index].draw(screen, stage_images[current_image_index].rect.x, stage_images[current_image_index].rect.y)
+                # 플레이어와 현재 이미지의 충돌 검사
+                if player_rect.colliderect(stage_images[current_image_index].rect):
+                    # 아이템 획득 효과음
+                    item_sound.play()
+                    stage_images[current_image_index].active = False
+                    current_image_index += 1
+                    image_timer = pygame.time.get_ticks()
 
         # 플레이어를 카메라 위치에 따라 그리기
         screen.blit(player_image, (player_x, player_y))
@@ -551,7 +630,7 @@ def runBossGame(
             if fireball.rect.y >= screen_height:
                 fireballs.remove(fireball)
 
-        # 플레이어와 Fireball 충돌 검사
+            # 플레이어와 Fireball 충돌 검사
             if fireball.check_collision(pygame.Rect(player_x, player_y, player_width, player_height)):
                 if not invincible:
                     player_hp -= 1
@@ -566,7 +645,7 @@ def runBossGame(
                  
         # HP 이미지 표시
         if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (150, 50)), (10, 10))
-
+        
         # 화면 업데이트
         pygame.display.flip()
 
@@ -575,6 +654,9 @@ def runBossGame(
 
     # 게임 오버 시 음악 중단
     pygame.mixer.music.stop()
+
+    # gameover.mp3 재생
+    gameover_sound.play()
 
     # 메시지 박스 표시
     result = messagebox.askquestion("게임 종료", "다시하시겠습니까?")
@@ -606,6 +688,98 @@ def runBossGame(
     else:
         pygame.quit()
         sys.exit()
+
+def GotoEnding(
+        screen,
+        clock,
+        player_image,
+        hp_images,
+        jump_sound,
+        ):
+
+    # 배경 이미지 로드
+    ending_image = pygame.image.load("정문.png")
+    ending_image = pygame.transform.scale(ending_image, (1000, 800))
+
+    # 플레이어 설정
+    player_width = 100
+    player_height = 100
+    player_x = 50
+    player_y = screen_height - player_height
+    player_speed = 10
+    jump_height = 20
+    player_hp = 3
+
+    # 플레이어의 초기 속도 및 중력 설정
+    player_velocity_y = 0
+    gravity = 1.5
+
+    # "Congratulation!" 텍스트 설정
+    Congratulation_font = pygame.font.SysFont('Comic Sans MS', 30)
+    Congratulation_textsurface = Congratulation_font.render('Congratulation!', False, (255, 255, 255))
+    Congratulation_textsurface = pygame.transform.scale(Congratulation_textsurface, (400, 100))
+    
+    running = True
+
+    # 엔딩음악 재생
+    pygame.mixer.music.load("ending_music.mp3")
+    pygame.mixer.music.play(1, 0.0)
+
+    while running:
+
+        # 배경 그리기 (맵의 배경)
+        screen.blit(ending_image, (0, 0))
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        keys = pygame.key.get_pressed()
+
+        # 키 입력에 따라 플레이어의 위치 조정
+        if keys[pygame.K_LEFT] and player_x > 0:
+            player_x -= player_speed
+        if keys[pygame.K_RIGHT] and player_x < screen_BossGame_width + player_width:
+            player_x += player_speed
+        if keys[pygame.K_SPACE] and player_y == screen_BossGame_height - 100:
+            # jump 효과음 재생
+            jump_sound.play()
+            player_velocity_y = -jump_height
+
+        # 중력 적용
+        player_velocity_y += gravity
+        player_y += player_velocity_y
+
+        # 바닥에 닿으면 중력 초기화
+        if player_y > screen_BossGame_height - 100:
+            player_y = screen_BossGame_height - 100
+            player_velocity_y = 0
+
+        # 플레이어 그리기
+        screen.blit(player_image, (player_x, player_y))
+
+        # "Congratulation!" 텍스트 출력
+        screen.blit(Congratulation_textsurface,(300, 100))
+                 
+        # HP 이미지 표시
+        if (player_hp >= 1): screen.blit(pygame.transform.scale(hp_images[player_hp], (150, 50)), (10, 10))
+
+        # 음악이 끝나면 루프 종료
+        if (not pygame.mixer.music.get_busy()):
+            running = False
+        
+        # 화면 업데이트
+        pygame.display.flip()
+
+        # FPS 설정
+        clock.tick(30)
+
+    # 게임 종료 메시지 표시
+    messagebox.showinfo("수고하셨습니다.", "당신의 졸업을 축하드립니다!!")
+
+    # 게임 종료
+    pygame.quit()
+    sys.exit()
 
 if __name__ == '__main__':
     initGame()
