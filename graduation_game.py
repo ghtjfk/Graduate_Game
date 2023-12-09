@@ -1,3 +1,5 @@
+import random
+import math
 import pygame
 import sys
 import time
@@ -10,6 +12,32 @@ screen_width = 1000
 screen_height = 800
 map_width = 4000
 map_height = 800
+
+# Fireball 클래스 정의
+class Fireball:
+    def __init__(self, x, y, image):
+        self.image = image
+        self.rect = self.image.get_rect(center=(x, y))
+        self.speed = 10
+        # 181도에서 359도 사이의 랜덤한 각도 설정
+        angle = random.randrange(10, 170)
+        angle_rad = math.radians(angle)
+        self.direction_x = math.cos(angle_rad)
+        self.direction_y = math.sin(angle_rad)
+
+    def move(self):
+        self.rect.x += self.speed * self.direction_x
+        self.rect.y += self.speed * self.direction_y
+
+        # 벽에 닿았을 때 반사
+        if self.rect.x <= 0 or self.rect.x >= screen_width - self.rect.width:
+            self.direction_x *= -1  # x 방향 반전
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
+
+    def check_collision(self, player_rect):
+        return self.rect.colliderect(player_rect)
 
 class Block:
     def __init__(self, x, y, width, height):
@@ -443,6 +471,10 @@ def runBossGame(
     boss_image = pygame.image.load("boss_image.png")
     boss_image = pygame.transform.scale(boss_image, (800, 150))
 
+    # fireball 이미지 로드
+    fireball_image = pygame.image.load("fireball.png").convert_alpha()
+    fireballs = []
+
     # 배경 이미지 로드
     boss_background_stage = pygame.image.load("코딩화면.png")
     boss_background_stage = pygame.transform.scale(boss_background_stage, (1000, 800))
@@ -466,7 +498,10 @@ def runBossGame(
     invincible_start_time = 0  # 무적이 시작된 시간
 
     running = True
-    
+
+    fireball_timer = 0
+    fireball_interval = 1000
+
     while running and player_hp > 0:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -501,6 +536,29 @@ def runBossGame(
 
         # 보스 그리기
         screen.blit(boss_image, (100, 0))
+
+        # Fireball 구현
+        current_time = pygame.time.get_ticks()
+        if current_time - fireball_timer > fireball_interval:
+            fireball_timer = current_time
+            # 보스 위치에서 Fireball 생성
+            fireballs.append(Fireball(500, 100, fireball_image))
+
+        for fireball in fireballs[:]:
+            fireball.move()
+            fireball.draw(screen)
+            # 화면 아래로 넘어가면 제거
+            if fireball.rect.y >= screen_height:
+                fireballs.remove(fireball)
+
+        # 플레이어와 Fireball 충돌 검사
+            if fireball.check_collision(pygame.Rect(player_x, player_y, player_width, player_height)):
+                if not invincible:
+                    player_hp -= 1
+                    fireballs.remove(fireball)
+                    invincible = True
+                    invincible_start_time = time.time()
+                    hit_sound.play()
 
         # 무적 상태인 경우, 1초 동안은 무적을 유지
         if invincible and time.time() - invincible_start_time > invincible_duration:
