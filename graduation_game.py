@@ -47,7 +47,7 @@ class Item:
     def check_collision(self, player_rect):
         return self.rect.colliderect(player_rect)
 
-def runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items):
+def runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound):
     # 플레이어 설정
     player_width = 100
     player_height = 100
@@ -83,6 +83,12 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
     # 카메라 위치 설정
     camera_x = 0
 
+    # "시험 기간" 텍스트 설정
+    pygame.font.init()
+    myfont = pygame.font.SysFont('Comic Sans MS', 30)
+    textsurface = myfont.render('Exam Period', False, (255, 255, 255))
+    textsurface = pygame.transform.scale(textsurface, (800, 100))
+
     running = True
     
     while running and player_hp > 0:
@@ -98,6 +104,8 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
         if keys[pygame.K_RIGHT] and player_x < map_width - player_width:
             player_x += player_speed
         if keys[pygame.K_SPACE] and player_y == screen_height - 100:
+            # jump 효과음 재생
+            jump_sound.play()
             player_velocity_y = -jump_height
 
         # 중력 적용
@@ -130,10 +138,10 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
 
             # 플레이어와 과제 충돌 체크
             if (
-                player_x < assignment["x"] + assignment_width - 50 and
-                player_x + player_width > assignment["x"] + 50 and
-                player_y < assignment["y"] + assignment_height - 50 and
-                player_y + player_height > assignment["y"] + 50
+                player_x < assignment["x"] + assignment_width - 55 and
+                player_x + player_width > assignment["x"] + 55 and
+                player_y < assignment["y"] + assignment_height - 55 and
+                player_y + player_height > assignment["y"] + 55
             ):
                 # 무적 상태인지 확인하고 충돌 시 처리
                 if not invincible:
@@ -142,6 +150,8 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
                     # 무적 상태로 설정 및 시작 시간 기록
                     invincible = True
                     invincible_start_time = time.time()
+                    # 피격 시 효과음 재생
+                    hit_sound.play()
 
         # 무적 상태인 경우, 1초 동안은 무적을 유지
         if invincible and time.time() - invincible_start_time > invincible_duration:
@@ -158,6 +168,7 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
             player_y + player_height > screen_height - 100
         ):
             # 충돌 시 HP 감소 및 플레이어 위치 초기화
+            hit_sound.play()    # 피격 시 효과음 재생
             player_hp -= 1
             player_x = 1200
             player_y = screen_height - 100
@@ -195,6 +206,8 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
                     player_velocity_y = 0
                     # 플레이어가 점프 중이 아니라면 바닥에 닿은 것으로 처리
                     if keys[pygame.K_SPACE]:
+                        # 효과음 재생
+                        jump_sound.play()
                         player_velocity_y = -jump_height
 
                 # 가시에 닿아 리스폰 될 때 block 속으로 들어가는 오류 해결
@@ -203,6 +216,8 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
                     player_velocity_y = 0
                     # 플레이어가 점프 중이 아니라면 바닥에 닿은 것으로 처리
                     if keys[pygame.K_SPACE]:
+                        # 효과음 재생
+                        jump_sound.play()
                         player_velocity_y = -jump_height
 
                 # 좌우 방향으로의 충돌을 확인하여 위치 조정
@@ -220,9 +235,14 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
 
         # 플레이어와 아이템 충돌 체크
         if items[0].check_collision(player_rect) and player_hp <= 2:
+            # 아이템 획득 효과음
+            item_sound.play()
             # 충돌 시 HP 증가 및 아이템 제거
             player_hp += 1
             items[0].rect.x = -1000  # 아이템을 화면 밖으로 옮겨서 보이지 않게 함
+
+        # "시험 기간" 텍스트 출력
+        screen.blit(textsurface,(1900 - camera_x, screen_height - 200))
 
         # 화면 업데이트
         pygame.display.flip()
@@ -240,8 +260,11 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
         pygame.mixer.music.load("main_music.mp3")
         pygame.mixer.music.play(-1)
 
+        # 아이템 위치 재설정
+        items[0].rect.x = 1200
+        items[0].rect.y = screen_height - 400
         # 게임 재시작
-        runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items)
+        runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
     else:
         pygame.quit()
         sys.exit()
@@ -294,6 +317,14 @@ def initGame():
     # 아이템 객체 생성 및 리스트에 추가
     items = [Item(1200, screen_height - 400, 250, 100, "HP1.png")]
 
+    # 피격 시 효과음 로드
+    jump_sound = pygame.mixer.Sound("jump.mp3")
+
+    # 피격 시 효과음 로드
+    hit_sound = pygame.mixer.Sound("hit.mp3")
+
+    item_sound = pygame.mixer.Sound("item.mp3")
+
     # 초기 배경 음악 로드 및 재생 (7초짜리)
     '''pygame.mixer.music.load("initial_music.mp3")
     pygame.mixer.music.play(1, 0.0)'''
@@ -308,7 +339,7 @@ def initGame():
     
     # 메인 루프
     clock = pygame.time.Clock()
-    runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items)
+    runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
 
 if __name__ == '__main__':
     initGame()
