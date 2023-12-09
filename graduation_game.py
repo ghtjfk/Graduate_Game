@@ -3,12 +3,6 @@ import sys
 import time
 from tkinter import messagebox
 
-# 화면 크기 및 맵 크기 설정
-screen_width = 1000
-screen_height = 800
-map_width = 4000
-map_height = 800
-
 class Block:
     def __init__(self, x, y, width, height):
         self.rect = pygame.Rect(x, y, width, height)
@@ -47,7 +41,7 @@ class Item:
     def check_collision(self, player_rect):
         return self.rect.colliderect(player_rect)
 
-def runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound):
+def runGame(screen_width, screen_height, map_width, map_height, screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound):
     # 플레이어 설정
     player_width = 100
     player_height = 100
@@ -201,7 +195,7 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
             if block.check_collision(player_rect):
 
                 # 플레이어가 블록 위에 있는지 확인하고, 위에 있다면 y 좌표를 조정
-                if player_y + player_height <= block.rect.y + 30 and player_x != 1200:
+                if player_y + player_height <= block.rect.y + 99 and player_x != 1200:
                     player_y = block.rect.y - player_height
                     player_velocity_y = 0
                     # 플레이어가 점프 중이 아니라면 바닥에 닿은 것으로 처리
@@ -264,12 +258,19 @@ def runGame(screen, clock, player_image, background_stage1, assignment_image, th
         items[0].rect.x = 1200
         items[0].rect.y = screen_height - 400
         # 게임 재시작
-        runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
+        runGame(screen_width, screen_height, map_width, map_height, screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
     else:
         pygame.quit()
         sys.exit()
 
 def initGame():
+
+    # 화면 크기 및 맵 크기 설정
+    screen_width = 1000
+    screen_height = 800
+    map_width = 4000
+    map_height = 800
+
     pygame.init()
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("졸업 게임")
@@ -303,7 +304,7 @@ def initGame():
     # 블록 객체들 생성 및 리스트에 추가
     blocks = [
         Block(300, screen_height - 100, 100, 100),    # 폭탄 왼쪽 벽
-        Block(1100, screen_height - 100, 300, 100),   # 왼쪽 계단 + 폭탄 오른쪽 벽
+        Block(1100, screen_height - 100, 300, 100),   # 폭탄 오른쪽 벽 + 왼쪽 계단
         Block(1400, screen_height - 200, 100, 200),   
         Block(1500, screen_height - 300, 100, 300),
         Block(3000, screen_height - 300, 100, 300),   # 오른쪽 계단
@@ -339,7 +340,7 @@ def initGame():
     
     # 메인 루프
     clock = pygame.time.Clock()
-    runGame(screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
+    runGame(screen_width, screen_height, map_width, map_height, screen, clock, player_image, background_stage1, assignment_image, thorn_image, hp_images, door_image, blocks, items, jump_sound, hit_sound, item_sound)
 
 if __name__ == '__main__':
     initGame()
