@@ -53,6 +53,7 @@ class Fireball:
         smaller_rect = self.rect.inflate(-65, -65)  # 가로, 세로 각각 65 픽셀씩 줄임
         return smaller_rect.colliderect(player_rect)
 
+# 블록 클래스 정의
 class Block:
     def __init__(self, x, y, width, height):
         self.rect = pygame.Rect(x, y, width, height)
@@ -64,7 +65,8 @@ class Block:
 
     def check_collision(self, player_rect):
         return self.rect.colliderect(player_rect)
-    
+
+# 움직이는 블록 클래스 정의
 class MovingBlock(Block):
     def __init__(self, x, y, width, height, min_y, max_y, speed):
         super().__init__(x, y, width, height)
@@ -78,7 +80,8 @@ class MovingBlock(Block):
         # 블록이 최소 높이에 도달하거나 최대 높이에 도달하면 방향을 바꿈
         if self.rect.y <= self.min_y or self.rect.y >= self.max_y:
             self.speed *= -1
-    
+
+# 아이템 클래스 정의
 class Item:
     def __init__(self, x, y, width, height, image_path):
         self.rect = pygame.Rect(x, y, width, height)
@@ -224,7 +227,6 @@ def runGame(
     assignment_speed = 7
 
     thorn_width = 1400
-
     door_width = 300
 
     # 플레이어의 초기 무적 상태 및 무적 지속 시간 설정
@@ -340,7 +342,7 @@ def runGame(
             player_y < screen_height and
             player_y + player_height > screen_height - 400
         ):
-            # 게임 오버 시 음악 중단
+            # 1스테이지 클리어 시 음악 중단
             pygame.mixer.music.stop()
 
             # 충돌 시 다음 스테이지로
@@ -358,7 +360,8 @@ def runGame(
                 jump_sound,
                 hit_sound,
                 item_sound,
-                gameover_sound
+                gameover_sound,
+                player_hp
             )
 
         # MovingBlock들의 move 메서드 호출
@@ -482,7 +485,8 @@ def runBossGame(
         jump_sound,
         hit_sound,
         item_sound,
-        gameover_sound
+        gameover_sound,
+        player_hp
         ):
 
     # 초기 음악이 끝나면 다른 음악으로 교체 및 반복 재생
@@ -525,7 +529,6 @@ def runBossGame(
     player_y = screen_height - player_height
     player_speed = 10
     jump_height = 20
-    player_hp = 3
 
     # 플레이어의 초기 속도 및 중력 설정
     player_velocity_y = 0
@@ -592,6 +595,7 @@ def runBossGame(
                         player_image,
                         hp_images,
                         jump_sound,
+                        player_hp
                         )
             
             if not stage_images[current_image_index].active:
@@ -661,6 +665,9 @@ def runBossGame(
     # 메시지 박스 표시
     result = messagebox.askquestion("게임 종료", "다시하시겠습니까?")
     if result == 'yes':
+        # gameover.mp3 중단
+        gameover_sound.stop()
+
         # 음악 다시 재생
         pygame.mixer.music.load("main_music.mp3")
         pygame.mixer.music.play(-1)
@@ -695,6 +702,7 @@ def GotoEnding(
         player_image,
         hp_images,
         jump_sound,
+        player_hp
         ):
 
     # 배경 이미지 로드
@@ -708,7 +716,6 @@ def GotoEnding(
     player_y = screen_height - player_height
     player_speed = 10
     jump_height = 20
-    player_hp = 3
 
     # 플레이어의 초기 속도 및 중력 설정
     player_velocity_y = 0
